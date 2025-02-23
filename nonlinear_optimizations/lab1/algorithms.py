@@ -1,7 +1,9 @@
 
 max_steps = 100
 
-def dichotomy_solver(a, b, epsylon, l, func):
+
+def dichotomy_solver(a, b, epsylon, l, func):  #a,b - границы интервала, epylon - шаг от центра, l - минимальный интервал, func - функция
+    
     solver_result = { 
         "solution_log": [],
         "a_end": 0,
@@ -21,13 +23,13 @@ def dichotomy_solver(a, b, epsylon, l, func):
                 print("end")
                 current_step = "end"
             else:
-                middle = (a + b )/2
+                middle = (a + b)/2
                 lam = middle - epsylon
                 mu = middle + epsylon
                 current_step = "step2"
         elif current_step == "step2":
             print("test2")
-            f_lam = func(lam)
+            f_lam = func(lam)  
             f_mu = func(mu)
    
             solver_result["solution_log"].append(
@@ -40,12 +42,12 @@ def dichotomy_solver(a, b, epsylon, l, func):
             else:
                 a = lam
                 b = b
-            k = k+1
-            if k > max_steps:
+            k = k+1  #мб надо обновлять значение раньше?
+            if k > max_steps: 
                 print("end1")
                 current_step = "end"
             else:
-                print("step11")
+                print(f'step{k}') #было step11
                 current_step = "step1"
     solver_result["a_end"] = a
     solver_result["b_end"] = b
@@ -222,9 +224,4 @@ def fibonacchi_solver(a, b, epsylon, l, func):
     return solver_result
 
 
-solvers = [dichotomy_solver, golden_ratio_solver, fibonacchi_solver]
-for solver in solvers:
-    solution = solver(-3, 5, 0.09, 0.2, lambda x: x*x - 2*x)
-    for step in solution["solution_log"]:
-        print(step)
-        
+

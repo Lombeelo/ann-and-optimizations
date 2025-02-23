@@ -1,25 +1,25 @@
 from tkinter import *
 from tkinter import ttk
+import algorithms as alg
 
 root = Tk()
 root.title("lab1")
 root.geometry("500x600")
 
+epsilon = 0.1
+l = 2,15
 
 def solve():
     if alg_combobox.get() == 'Дихотомический поиск':
-        print('hui')
+        print(alg.dichotomy_solver(int(left_entry.get()), int(right_entry.get()), epsilon, l, eval(f"lambda x: {function_entry.get()}")))  #a,b,epsilon,l,func
     elif alg_combobox.get() == 'Золотое сечение':
         print('whh')
     elif alg_combobox.get() == 'Метод Фибоначчи':
         print('huseeei')
 
 
-la = Label(text='hui')
-
 function_label = Label(text='Введите функцию')
 function_label.place(x=20, y=20)
-
 function_entry = Entry()
 function_entry.place(x=150, y=20)
 
@@ -47,4 +47,8 @@ alg_combobox.place(x=20, y=110)
 solve_btn = Button(text='Решить', command=solve)
 solve_btn.place(x=20, y=140)
 
+
 root.mainloop()
+
+
+
