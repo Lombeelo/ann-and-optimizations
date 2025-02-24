@@ -34,7 +34,7 @@ def dichotomy_solver(a, b, epsylon, l, func):  #a,b - границы интер�
    
             solver_result["solution_log"].append(
                 dict(k = k, a = a, b = b, lam = lam, mu = mu, f_lam = f_lam, f_lam_calculated = True,
-                      f_mu = f_mu, f_mu_calculated = True))
+                      f_mu = f_mu, f_mu_calculated = True, epsylon = epsylon))
 
             if f_lam < f_mu:
                 a = a
@@ -79,7 +79,7 @@ def golden_ratio_solver(a, b, epsylon, l, func):
     solver_result["solution_log"].append(
                 dict(k = k, a = a, b = b, lam = lam, mu = mu,
                       f_lam = f_lam, f_lam_calculated = lam_calc,
-                      f_mu = f_mu, f_mu_calculated = mu_calc))
+                      f_mu = f_mu, f_mu_calculated = mu_calc, epsylon = epsylon))
     current_step = "step1"
     while current_step != "end":
         if current_step == "step1":
@@ -118,7 +118,7 @@ def golden_ratio_solver(a, b, epsylon, l, func):
             solver_result["solution_log"].append(
                 dict(k = k, a = a, b = b, lam = lam, mu = mu,
                       f_lam = f_lam, f_lam_calculated = lam_calc,
-                      f_mu = f_mu, f_mu_calculated = mu_calc))
+                      f_mu = f_mu, f_mu_calculated = mu_calc, epsylon = epsylon))
             
             current_step = "step1"
 
@@ -150,7 +150,7 @@ def fibonacchi_solver(a, b, epsylon, l, func):
     solver_result["solution_log"].append(
         dict(k = k, a = a, b = b, lam = lam, mu = mu,
                 f_lam = f_lam, f_lam_calculated = lam_calc,
-                f_mu = f_mu, f_mu_calculated = mu_calc))
+                f_mu = f_mu, f_mu_calculated = mu_calc, epsylon = epsylon))
 
     current_step = "step1"
     while current_step != "end":
@@ -194,7 +194,7 @@ def fibonacchi_solver(a, b, epsylon, l, func):
             solver_result["solution_log"].append(
                 dict(k = k, a = a, b = b, lam = lam, mu = mu,
                         f_lam = f_lam, f_lam_calculated = lam_calc,
-                        f_mu = f_mu, f_mu_calculated = mu_calc))
+                        f_mu = f_mu, f_mu_calculated = mu_calc, epsylon = epsylon))
             
             current_step = "step1"
 
@@ -216,7 +216,7 @@ def fibonacchi_solver(a, b, epsylon, l, func):
             solver_result["solution_log"].append(
                 dict(k = k, a = a, b = b, lam = lam, mu = mu,
                         f_lam = f_lam, f_lam_calculated = lam_calc,
-                        f_mu = f_mu, f_mu_calculated = mu_calc))
+                        f_mu = f_mu, f_mu_calculated = mu_calc, epsylon = epsylon))
             current_step = "end"
     
     solver_result["a_end"] = a
