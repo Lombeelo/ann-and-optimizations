@@ -6,8 +6,9 @@ root = Tk()
 root.title("lab1")
 root.geometry("500x600")
 
-epsilon = 0.1
-l = 2,15
+epsilon = 0.1 # Перенести ввод в интерфейс
+l = 2.15 # Перенести ввод в интерфейс
+
 
 def solve():
     if alg_combobox.get() == 'Дихотомический поиск':
@@ -48,7 +49,7 @@ solve_btn = Button(text='Решить', command=solve)
 solve_btn.place(x=20, y=140)
 
 
-root.mainloop()
+root.mainloop() # сделать графики
 
 
 
