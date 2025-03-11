@@ -8,19 +8,10 @@ from matplotlib.backends.backend_tkagg import FigureCanvasTkAgg
 import ast
 
 
+def clear_table():
+    for item in tree.get_children():
+        tree.delete(item)
 
-def highlight_curve(lam, mu, f_lam, f_mu):
-    ax.scatter([lam, mu], [f_lam, f_mu], color='red')
-    canvas.draw()
-
-def on_tree_select(event):
-    selected_item = tree.selection()[0]
-    item_values = tree.item(selected_item, 'values')
-    lam = float(item_values[3])
-    mu = float(item_values[4])
-    f_lam = float(item_values[5])
-    f_mu = float(item_values[6])
-    highlight_curve(lam, mu, f_lam, f_mu)
 
 def solve():
     clear_table()
@@ -39,35 +30,56 @@ def solve():
             solution = alg.dichotomy_solver(a, b, epsylon, l, eval(function_str))
         elif min_max_combobox.get() == 'MAX':
             solution = alg.dichotomy_solver(a, b, epsylon, l, eval(f"lambda x: -({function_entry.get()})"))
+        dichotomy_calc = Label(frame_input, text=f'Кол-во расчетов ф-ции (Дихотомический поиск): {solution['f_calculated_counter']}')
+        dichotomy_calc.pack()
+        dichotomy_arg = Label(frame_input, text=f'Оптимальный аргумент (Дихотомический поиск): {(solution['a_end'] + solution['b_end'])/2}')
+        dichotomy_arg.pack()
+        dichotomy_f = Label(frame_input, text=f'Оптимальный аргумент (Дихотомический поиск): {(solution['f_a_end'] + solution['f_b_end'])/2}')
+        dichotomy_f.pack()
     elif alg_combobox.get() == 'Золотое сечение':
         if min_max_combobox.get() == 'MIN':
             solution = alg.golden_ratio_solver(a, b, '-', l, eval(function_str))
         elif min_max_combobox.get() == 'MAX':
             solution = alg.golden_ratio_solver(a, b, '-', l, eval(f"lambda x: -({function_entry.get()})"))
+        golden_calc = Label(frame_input, text=f'Кол-во расчетов ф-ции (Золотое сечение): {solution['f_calculated_counter']}')
+        golden_calc.pack()
+        golden_arg = Label(frame_input, text=f'Оптимальный аргумент (Золотое сечение): {(solution['a_end'] + solution['b_end'])/2}')
+        golden_arg.pack()
+        golden_f = Label(frame_input, text=f'Оптимальный аргумент (Золотое сечение): {(solution['f_a_end'] + solution['f_b_end'])/2}')
+        golden_f.pack()
     elif alg_combobox.get() == 'Метод Фибоначчи':
         if min_max_combobox.get() == 'MIN':
             solution = alg.fibonacchi_solver(a, b, epsylon, l, eval(function_str))
         elif min_max_combobox.get() == 'MAX':
             solution = alg.fibonacchi_solver(a, b, epsylon, l, eval(f"lambda x: -({function_entry.get()})"))
+        golden_calc = Label(frame_input, text=f'Кол-во расчетов ф-ции (Метод Фибоначчи): {solution['f_calculated_counter']}')
+        golden_calc.pack()
+        golden_arg = Label(frame_input, text=f'Оптимальный аргумент (Метод Фибоначчи): {(solution['a_end'] + solution['b_end'])/2}')
+        golden_arg.pack()
+        golden_f = Label(frame_input, text=f'Оптимальный аргумент (Метод Фибоначчи): {(solution['f_a_end'] + solution['f_b_end'])/2}')
+        golden_f.pack()
 
     # Предполагаем, что solution["solution_log"] содержит данные каждой итерации
     for step in solution["solution_log"]:
-        tree.insert("", "end", values=(step['k'], step['a'], step['b'], step['lam'], step['mu'], step['f_lam'], step['f_mu'], step['epsylon']))
+        tree.insert("", "end", values=(step['solver_type'], step['k'], step['a'], step['b'], step['lam'], step['mu'], step['f_lam'], step['f_mu']))
 
-    plot_function(eval(function_str), a, b)
 
-def clear_table():
-    for item in tree.get_children():
-        tree.delete(item)
+    # plot_function(eval(function_str), a, b)
+
+
+
 
 def solve_all():
+
     clear_table()
+
     function_str = f"lambda x: {function_entry.get()}"
+    all_solved = [] #для хранения информации обо всех алгоритмах, а не только о последнем
     try:
         a = ast.literal_eval(left_entry.get())
         b = ast.literal_eval(right_entry.get())
         epsylon = ast.literal_eval(epsylon_entry.get())
-        l = ast.literal_eval(l_entry.get())
+        l = ast.literal_eval(l_entry.get())                             
     except (ValueError, SyntaxError):
         print("Ошибка ввода. Пожалуйста, проверьте значения.")
         return
@@ -77,26 +89,30 @@ def solve_all():
         if solver == alg.golden_ratio_solver:
             if min_max_combobox.get() == 'MIN':
                 solution = solver(a, b, '-', l, eval(function_str))
+                all_solved.append(solution)
             elif min_max_combobox.get() == 'MAX':
                 solution = solver(a, b, '-', l, eval(f"lambda x: -({function_entry.get()})"))
+                all_solved.append(solution)
         else:
             if min_max_combobox.get() == 'MIN':
                 solution = solver(a, b, epsylon, l, eval(function_str))
+                all_solved.append(solution)
             elif min_max_combobox.get() == 'MAX':
                 solution = solver(a, b, epsylon, l, eval(f"lambda x: -({function_entry.get()})"))
+                all_solved.append(solution)
 
         for step in solution["solution_log"]:
-            tree.insert("", "end", values=(step['k'], step['a'], step['b'], step['lam'], step['mu'], step['f_lam'], step['f_mu'], step['epsylon']))
+            tree.insert("", "end", values=(step['solver_type'], step['k'], step['a'], step['b'], step['lam'], step['mu'], step['f_lam'], step['f_mu']))
 
-    plot_function(eval(function_str), a, b)
+    print(all_solved)
+   
+    # plot_function(eval(function_str), a, b)
 
 
 
 
 
 # Запуск GUI
-
-
 
 root = Tk()
 root.title("lab1")
@@ -131,7 +147,7 @@ epsylon_label.pack()
 epsylon_entry = Entry(frame_input)
 epsylon_entry.pack()
 
-l_label = Label(frame_input, text='Количество итераций (l):')
+l_label = Label(frame_input, text='Минимально допустимый промежуток (l):')
 l_label.pack()
 
 l_entry = Entry(frame_input)
@@ -155,16 +171,12 @@ solve_button.pack(pady=5)
 solve_all_button = Button(frame_input, text='Решить все', command=solve_all)
 solve_all_button.pack(pady=5)
 
-# Создание фрейма для графика
-frame_graph = Frame(root)
-frame_graph.pack(side=TOP, fill=BOTH, expand=True)
-
 # Создание фрейма для таблицы
 frame_table = Frame(root)
-frame_table.pack(side=BOTTOM, fill=BOTH, expand=True)
+frame_table.pack(side=TOP, fill=BOTH, expand=True)
 
 # Создание таблицы
-columns = ['k', 'a', 'b', 'lam', 'mu', 'f_lam', 'f_mu', 'epsylon']
+columns = ['Метод', 'k', 'a', 'b', 'lam', 'mu', 'f_lam', 'f_mu']
 tree = ttk.Treeview(frame_table, columns=columns, show='headings')
 tree.pack(side=LEFT, fill=BOTH, expand=True)
 
@@ -177,10 +189,7 @@ scrollbar = Scrollbar(frame_table, orient="vertical", command=tree.yview)
 scrollbar.pack(side=RIGHT, fill=Y)
 tree.configure(yscroll=scrollbar.set)
 
-# График
-fig, ax = plt.subplots()
-canvas = FigureCanvasTkAgg(fig, master=frame_graph)
-canvas.get_tk_widget().pack(fill=BOTH, expand=True)
+
 
 # Обновленная функция для отрисовки графика
 def plot_function(func, a, b, lam=None, mu=None):
@@ -232,5 +241,4 @@ def on_table_select(event):
 tree.bind("<<TreeviewSelect>>", on_table_select)
 
 root.mainloop()
-
 
