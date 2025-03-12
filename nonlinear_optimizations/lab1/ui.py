@@ -7,14 +7,32 @@ import numpy as np
 from matplotlib.backends.backend_tkagg import FigureCanvasTkAgg
 import ast
 
+# Список для хранения виджетов с результатами
+result_labels = []
+
+def clear_results():
+    """Удаляет старые результаты перед обновлением новых значений."""
+    global result_labels
+    for label in result_labels:
+        label.destroy()
+    result_labels.clear()
 
 def clear_table():
     for item in tree.get_children():
         tree.delete(item)
 
 
+def clear_results():
+    """Удаляет старые результаты перед обновлением новых значений."""
+    global result_labels
+    for label in result_labels:
+        label.destroy()
+    result_labels.clear()
+
 def solve():
     clear_table()
+    clear_results()  # Очищаем старые результаты
+
     function_str = f"lambda x: {function_entry.get()}"
     try:
         a = ast.literal_eval(left_entry.get())
@@ -26,48 +44,33 @@ def solve():
         return
 
     if alg_combobox.get() == 'Дихотомический поиск':
-        if min_max_combobox.get() == 'MIN':
-            solution = alg.dichotomy_solver(a, b, epsylon, l, eval(function_str))
-        elif min_max_combobox.get() == 'MAX':
-            solution = alg.dichotomy_solver(a, b, epsylon, l, eval(f"lambda x: -({function_entry.get()})"))
-        dichotomy_calc = Label(frame_input, text=f'Кол-во расчетов ф-ции (Дихотомический поиск): {solution['f_calculated_counter']}')
-        dichotomy_calc.pack()
-        dichotomy_arg = Label(frame_input, text=f'Оптимальный аргумент (Дихотомический поиск): {(solution['a_end'] + solution['b_end'])/2}')
-        dichotomy_arg.pack()
-        dichotomy_f = Label(frame_input, text=f'Оптимальный аргумент (Дихотомический поиск): {(solution['f_a_end'] + solution['f_b_end'])/2}')
-        dichotomy_f.pack()
+        solution = alg.dichotomy_solver(a, b, epsylon, l, eval(function_str)) if min_max_combobox.get() == 'MIN' else alg.dichotomy_solver(a, b, epsylon, l, eval(f"lambda x: -({function_entry.get()})"))
+        method_name = "Дихотомический поиск"
     elif alg_combobox.get() == 'Золотое сечение':
-        if min_max_combobox.get() == 'MIN':
-            solution = alg.golden_ratio_solver(a, b, '-', l, eval(function_str))
-        elif min_max_combobox.get() == 'MAX':
-            solution = alg.golden_ratio_solver(a, b, '-', l, eval(f"lambda x: -({function_entry.get()})"))
-        golden_calc = Label(frame_input, text=f'Кол-во расчетов ф-ции (Золотое сечение): {solution['f_calculated_counter']}')
-        golden_calc.pack()
-        golden_arg = Label(frame_input, text=f'Оптимальный аргумент (Золотое сечение): {(solution['a_end'] + solution['b_end'])/2}')
-        golden_arg.pack()
-        golden_f = Label(frame_input, text=f'Оптимальный аргумент (Золотое сечение): {(solution['f_a_end'] + solution['f_b_end'])/2}')
-        golden_f.pack()
+        solution = alg.golden_ratio_solver(a, b, '-', l, eval(function_str)) if min_max_combobox.get() == 'MIN' else alg.golden_ratio_solver(a, b, '-', l, eval(f"lambda x: -({function_entry.get()})"))
+        method_name = "Золотое сечение"
     elif alg_combobox.get() == 'Метод Фибоначчи':
-        if min_max_combobox.get() == 'MIN':
-            solution = alg.fibonacchi_solver(a, b, epsylon, l, eval(function_str))
-        elif min_max_combobox.get() == 'MAX':
-            solution = alg.fibonacchi_solver(a, b, epsylon, l, eval(f"lambda x: -({function_entry.get()})"))
-        golden_calc = Label(frame_input, text=f'Кол-во расчетов ф-ции (Метод Фибоначчи): {solution['f_calculated_counter']}')
-        golden_calc.pack()
-        golden_arg = Label(frame_input, text=f'Оптимальный аргумент (Метод Фибоначчи): {(solution['a_end'] + solution['b_end'])/2}')
-        golden_arg.pack()
-        golden_f = Label(frame_input, text=f'Оптимальный аргумент (Метод Фибоначчи): {(solution['f_a_end'] + solution['f_b_end'])/2}')
-        golden_f.pack()
+        solution = alg.fibonacchi_solver(a, b, epsylon, l, eval(function_str)) if min_max_combobox.get() == 'MIN' else alg.fibonacchi_solver(a, b, epsylon, l, eval(f"lambda x: -({function_entry.get()})"))
+        method_name = "Метод Фибоначчи"
+    else:
+        return
 
-    # Предполагаем, что solution["solution_log"] содержит данные каждой итерации
+    # Добавляем результаты
+    result_labels.append(Label(frame_input, text=f'Кол-во расчетов ф-ции ({method_name}): {solution["f_calculated_counter"]}'))
+    result_labels.append(Label(frame_input, text=f'Оптимальный аргумент ({method_name}): {(solution["a_end"] + solution["b_end"]) / 2}'))
+    result_labels.append(Label(frame_input, text=f'Оптимальное значение функции ({method_name}): {-(solution["f_opt"])}'))
+
+    for label in result_labels:
+        label.pack()
+
+    # Заполняем таблицу
     for step in solution["solution_log"]:
-        tree.insert("", "end", values=(step['solver_type'], step['k'], step['a'], step['b'], step['lam'], step['mu'], step['f_lam'], step['f_mu']))
+        f_lam = f"{step['f_lam']} ★" if step.get('f_calculated', False) else step['f_lam']
+        f_mu = f"{step['f_mu']} ★" if step.get('f_calculated', False) else step['f_mu']
 
-
-    # plot_function(eval(function_str), a, b)
-
-
-
+        tree.insert("", "end", values=(step['solver_type'], step['k'], step['a'], step['b'], step['lam'], step['mu'], f_lam, f_mu))
+        
+    plot_function(eval(function_str), a, b)
 
 def solve_all():
 
@@ -106,11 +109,7 @@ def solve_all():
 
     print(all_solved)
    
-    # plot_function(eval(function_str), a, b)
-
-
-
-
+    plot_function(eval(function_str), a, b)
 
 # Запуск GUI
 
@@ -189,25 +188,28 @@ scrollbar = Scrollbar(frame_table, orient="vertical", command=tree.yview)
 scrollbar.pack(side=RIGHT, fill=Y)
 tree.configure(yscroll=scrollbar.set)
 
-
-
 # Обновленная функция для отрисовки графика
 def plot_function(func, a, b, lam=None, mu=None):
-    # Очищаем текущую фигуру
     plt.clf()
     
-    # Создаем массив значений x
     x = np.linspace(a, b, 100)
-    # Вычисляем значения функции
     y = func(x)
 
-    # Отрисовываем график
     plt.plot(x, y, label='Функция')
-    
-    # Добавляем метки на оси
+
+    # Добавляем точки A и B
+    plt.scatter([a, b], [func(a), func(b)], color='blue', label='A и B', zorder=3)
+
+    # Подсветка выбранного отрезка
+    if lam is not None and mu is not None:
+        plt.plot([lam, mu], [func(lam), func(mu)], color='purple', linewidth=3, label='Выбранный отрезок')
+
     plt.xlabel('x')
     plt.ylabel('f(x)')
     plt.title('График функции')
+    plt.legend()
+    plt.draw()
+    plt.pause(0.001)
 
     # Отображаем точки lam и mu, если они есть
     if lam is not None and mu is not None:
@@ -227,11 +229,11 @@ def on_table_select(event):
     values = tree.item(selected_item, 'values')  # Получаем значения выбранного элемента
 
     # Извлекаем необходимые значения из таблицы
-    k = int(values[0])
-    a = float(values[1])
-    b = float(values[2])
-    lam = float(values[3])
-    mu = float(values[4])
+    k = int(values[1])
+    a = float(values[2])
+    b = float(values[3])
+    lam = float(values[4])
+    mu = float(values[5])
 
     # Обновляем график с новыми значениями
     function_str = f"lambda x: {function_entry.get()}"
@@ -241,4 +243,3 @@ def on_table_select(event):
 tree.bind("<<TreeviewSelect>>", on_table_select)
 
 root.mainloop()
-

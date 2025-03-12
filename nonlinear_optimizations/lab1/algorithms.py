@@ -65,8 +65,7 @@ def dichotomy_solver(a, b, epsylon, l, func):  #a,b - границы интер�
 
     solver_result["a_end"] = a
     solver_result["b_end"] = b
-    solver_result["f_a_end"] = func(solver_result["a_end"])
-    solver_result["f_b_end"] = func(solver_result["f_b_end"])
+    solver_result["f_opt"] = func((solver_result["a_end"]+solver_result["b_end"])/2)
     solver_result["f_calculated_counter"] = calc_counter(solver_result)
 
     return solver_result
@@ -145,8 +144,7 @@ def golden_ratio_solver(a, b, epsylon, l, func):
 
     solver_result["a_end"] = a
     solver_result["b_end"] = b
-    solver_result["f_a_end"] = func(solver_result["a_end"])
-    solver_result["f_b_end"] = func(solver_result["f_b_end"])
+    solver_result["f_opt"] = func((solver_result["a_end"]+solver_result["b_end"])/2)
     solver_result["f_calculated_counter"] = calc_counter(solver_result)
 
 
@@ -250,8 +248,7 @@ def fibonacchi_solver(a, b, epsylon, l, func):
     
     solver_result["a_end"] = a
     solver_result["b_end"] = b
-    solver_result["f_a_end"] = func(solver_result["a_end"])
-    solver_result["f_b_end"] = func(solver_result["f_b_end"])
+    solver_result["f_opt"] = func((solver_result["a_end"]+solver_result["b_end"])/2)
     solver_result["f_calculated_counter"] = calc_counter(solver_result)
 
 
