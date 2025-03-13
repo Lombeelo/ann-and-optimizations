@@ -57,10 +57,8 @@ def dichotomy_solver(a, b, epsylon, l, func):  #a,b - границы интер�
                 b = b
             k = k+1  
             if k > max_steps: 
-                print("end1")
                 current_step = "end"
             else:
-                print(f'step{k}') #было step11
                 current_step = "step1"
 
     solver_result["a_end"] = a
