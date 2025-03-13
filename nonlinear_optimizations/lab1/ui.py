@@ -58,19 +58,24 @@ def solve():
     # Добавляем результаты
     result_labels.append(Label(frame_input, text=f'Кол-во расчетов ф-ции ({method_name}): {solution["f_calculated_counter"]}'))
     result_labels.append(Label(frame_input, text=f'Оптимальный аргумент ({method_name}): {(solution["a_end"] + solution["b_end"]) / 2}'))
-    result_labels.append(Label(frame_input, text=f'Оптимальное значение функции ({method_name}): {-(solution["f_opt"])}'))
+    if min_max_combobox.get() == 'MIN':
+        result_labels.append(Label(frame_input, text=f'Оптимальное значение функции ({method_name}): {solution["f_opt"]}'))
+    else:
+        result_labels.append(Label(frame_input, text=f'Оптимальное значение функции ({method_name}): {-(solution["f_opt"])}'))
+
 
     for label in result_labels:
         label.pack()
 
     # Заполняем таблицу
     for step in solution["solution_log"]:
-        f_lam = f"{step['f_lam']} ★" if step.get('f_calculated', False) else step['f_lam']
-        f_mu = f"{step['f_mu']} ★" if step.get('f_calculated', False) else step['f_mu']
+        f_lam = f"{step['f_lam']} ★" if step.get('f_calculated', True) else step['f_lam']
+        f_mu = f"{step['f_mu']} ★" if step.get('f_calculated', True) else step['f_mu']
 
         tree.insert("", "end", values=(step['solver_type'], step['k'], step['a'], step['b'], step['lam'], step['mu'], f_lam, f_mu))
         
     plot_function(eval(function_str), a, b)
+
 
 def solve_all():
 
@@ -200,14 +205,20 @@ def plot_function(func, a, b, lam=None, mu=None):
     # Добавляем точки A и B
     plt.scatter([a, b], [func(a), func(b)], color='blue', label='A и B', zorder=3)
 
-    # Подсветка выбранного отрезка
-    if lam is not None and mu is not None:
-        plt.plot([lam, mu], [func(lam), func(mu)], color='purple', linewidth=3, label='Выбранный отрезок')
+    # # Подсветка выбранного отрезка
+    # if lam is not None and mu is not None:
+    #     plt.plot([lam, mu], [func(lam), func(mu)], color='purple', linewidth=3, label='Выбранный отрезок')
+
+    # Добавляет отображение осей
+    ax = plt.gca()
+    ax.axhline(y=0, color='k')
+    ax.axvline(x=0, color='k')
 
     plt.xlabel('x')
     plt.ylabel('f(x)')
     plt.title('График функции')
     plt.legend()
+    plt.grid() # Добавление сетки
     plt.draw()
     plt.pause(0.001)
 
