@@ -9,6 +9,7 @@ import ast
 
 # Список для хранения виджетов с результатами
 result_labels = []
+tables = []
 
 def clear_results():
     """Удаляет старые результаты перед обновлением новых значений."""
@@ -17,110 +18,142 @@ def clear_results():
         label.destroy()
     result_labels.clear()
 
-def clear_table():
-    for item in tree.get_children():
-        tree.delete(item)
-
-
-def clear_results():
-    """Удаляет старые результаты перед обновлением новых значений."""
-    global result_labels
-    for label in result_labels:
-        label.destroy()
-    result_labels.clear()
+def clear_tables():
+    """Удаляет старые таблицы перед обновлением новых значений."""
+    global tables
+    for table in tables:
+        table.destroy()
+    tables.clear()
 
 def solve():
-    clear_table()
-    clear_results()  # Очищаем старые результаты
+    """Решает задачу выбранным методом и обновляет таблицу и результаты."""
+    clear_tables()
+    clear_results()
 
     function_str = f"lambda x: {function_entry.get()}"
     try:
-        a = ast.literal_eval(left_entry.get())
-        b = ast.literal_eval(right_entry.get())
-        epsylon = ast.literal_eval(epsylon_entry.get())
-        l = ast.literal_eval(l_entry.get())
+        a = round(ast.literal_eval(left_entry.get()), 4)
+        b = round(ast.literal_eval(right_entry.get()), 4)
+        epsylon = round(ast.literal_eval(epsylon_entry.get()), 4)
+        l = round(ast.literal_eval(l_entry.get()), 4)
     except (ValueError, SyntaxError):
-        print("Ошибка ввода. Пожалуйста, проверьте значения.")
+        print("Ошибка ввода. Проверьте значения.")
         return
 
-    if alg_combobox.get() == 'Дихотомический поиск':
-        solution = alg.dichotomy_solver(a, b, epsylon, l, eval(function_str)) if min_max_combobox.get() == 'MIN' else alg.dichotomy_solver(a, b, epsylon, l, eval(f"lambda x: -({function_entry.get()})"))
-        method_name = "Дихотомический поиск"
-    elif alg_combobox.get() == 'Золотое сечение':
-        solution = alg.golden_ratio_solver(a, b, '-', l, eval(function_str)) if min_max_combobox.get() == 'MIN' else alg.golden_ratio_solver(a, b, '-', l, eval(f"lambda x: -({function_entry.get()})"))
-        method_name = "Золотое сечение"
-    elif alg_combobox.get() == 'Метод Фибоначчи':
-        solution = alg.fibonacchi_solver(a, b, epsylon, l, eval(function_str)) if min_max_combobox.get() == 'MIN' else alg.fibonacchi_solver(a, b, epsylon, l, eval(f"lambda x: -({function_entry.get()})"))
-        method_name = "Метод Фибоначчи"
+    method_name = alg_combobox.get()
+    if method_name == 'Дихотомический поиск':
+        solver = alg.dichotomy_solver
+    elif method_name == 'Золотое сечение':
+        solver = alg.golden_ratio_solver
+    elif method_name == 'Метод Фибоначчи':
+        solver = alg.fibonacchi_solver
     else:
         return
 
-    # Добавляем результаты
+    function_eval = eval(function_str)
+    if min_max_combobox.get() == 'MAX':
+        function_eval = eval(f"lambda x: -({function_entry.get()})")
+
+    if solver == alg.golden_ratio_solver:
+        solution = solver(a, b, '-', l, function_eval)
+    else:
+        solution = solver(a, b, epsylon, l, function_eval)
+
+    # Вывод результатов
     result_labels.append(Label(frame_input, text=f'Кол-во расчетов ф-ции ({method_name}): {solution["f_calculated_counter"]}'))
-    result_labels.append(Label(frame_input, text=f'Оптимальный аргумент ({method_name}): {(solution["a_end"] + solution["b_end"]) / 2}'))
-    if min_max_combobox.get() == 'MIN':
-        result_labels.append(Label(frame_input, text=f'Оптимальное значение функции ({method_name}): {solution["f_opt"]}'))
-    else:
-        result_labels.append(Label(frame_input, text=f'Оптимальное значение функции ({method_name}): {-(solution["f_opt"])}'))
-
+    result_labels.append(Label(frame_input, text=f'Оптимальный аргумент ({method_name}): {round((solution["a_end"] + solution["b_end"]) / 2, 4)}'))
+    opt_value = round(solution["f_opt"], 4) if min_max_combobox.get() == 'MIN' else round(-solution["f_opt"], 4)
+    result_labels.append(Label(frame_input, text=f'Оптимальное значение функции ({method_name}): {opt_value}'))
 
     for label in result_labels:
         label.pack()
 
-    # Заполняем таблицу
-    for step in solution["solution_log"]:
-        f_lam = f"{step['f_lam']} ★" if step.get('f_calculated', True) else step['f_lam']
-        f_mu = f"{step['f_mu']} ★" if step.get('f_calculated', True) else step['f_mu']
-
-        tree.insert("", "end", values=(step['solver_type'], step['k'], step['a'], step['b'], step['lam'], step['mu'], f_lam, f_mu))
-        
+    # Создание таблицы
+    create_method_table(method_name, solution["solution_log"])
+    
     plot_function(eval(function_str), a, b)
 
 
 def solve_all():
-
-    clear_table()
+    """Решает задачу всеми методами и создает отдельные таблицы для каждого метода."""
+    clear_tables()
+    clear_results()
 
     function_str = f"lambda x: {function_entry.get()}"
-    all_solved = [] #для хранения информации обо всех алгоритмах, а не только о последнем
     try:
-        a = ast.literal_eval(left_entry.get())
-        b = ast.literal_eval(right_entry.get())
-        epsylon = ast.literal_eval(epsylon_entry.get())
-        l = ast.literal_eval(l_entry.get())                             
+        a = round(ast.literal_eval(left_entry.get()), 4)
+        b = round(ast.literal_eval(right_entry.get()), 4)
+        epsylon = round(ast.literal_eval(epsylon_entry.get()), 4)
+        l = round(ast.literal_eval(l_entry.get()), 4)
     except (ValueError, SyntaxError):
-        print("Ошибка ввода. Пожалуйста, проверьте значения.")
+        print("Ошибка ввода. Проверьте значения.")
         return
 
-    solvers = [alg.dichotomy_solver, alg.golden_ratio_solver, alg.fibonacchi_solver]
-    for solver in solvers:
+    solvers = {
+        'Дихотомический поиск': alg.dichotomy_solver,
+        'Золотое сечение': alg.golden_ratio_solver,
+        'Метод Фибоначчи': alg.fibonacchi_solver
+    }
+
+    function_eval = eval(function_str)
+    if min_max_combobox.get() == 'MAX':
+        function_eval = eval(f"lambda x: -({function_entry.get()})")
+
+    for method_name, solver in solvers.items():
         if solver == alg.golden_ratio_solver:
-            if min_max_combobox.get() == 'MIN':
-                solution = solver(a, b, '-', l, eval(function_str))
-                all_solved.append(solution)
-            elif min_max_combobox.get() == 'MAX':
-                solution = solver(a, b, '-', l, eval(f"lambda x: -({function_entry.get()})"))
-                all_solved.append(solution)
+            solution = solver(a, b, '-', l, function_eval)
         else:
-            if min_max_combobox.get() == 'MIN':
-                solution = solver(a, b, epsylon, l, eval(function_str))
-                all_solved.append(solution)
-            elif min_max_combobox.get() == 'MAX':
-                solution = solver(a, b, epsylon, l, eval(f"lambda x: -({function_entry.get()})"))
-                all_solved.append(solution)
+            solution = solver(a, b, epsylon, l, function_eval)
 
-        for step in solution["solution_log"]:
-            tree.insert("", "end", values=(step['solver_type'], step['k'], step['a'], step['b'], step['lam'], step['mu'], step['f_lam'], step['f_mu']))
+        # Вывод результатов
+        result_labels.append(Label(frame_input, text=f'Кол-во расчетов ф-ции ({method_name}): {solution["f_calculated_counter"]}'))
+        result_labels.append(Label(frame_input, text=f'Оптимальный аргумент ({method_name}): {round((solution["a_end"] + solution["b_end"]) / 2, 4)}'))
+        opt_value = round(solution["f_opt"], 4) if min_max_combobox.get() == 'MIN' else round(-solution["f_opt"], 4)
+        result_labels.append(Label(frame_input, text=f'Оптимальное значение функции ({method_name}): {opt_value}'))
 
-    print(all_solved)
-   
+        for label in result_labels:
+            label.pack()
+
+        # Создание таблицы
+        create_method_table(method_name, solution["solution_log"])
+
     plot_function(eval(function_str), a, b)
+
+def create_method_table(method_name, solution_log):
+    """Создает отдельную таблицу для каждого метода."""
+    method_frame = Frame(root)
+    method_frame.pack(side=TOP, fill=BOTH, expand=True, padx=5, pady=5)
+    tables.append(method_frame)
+
+    method_label = Label(method_frame, text=method_name, font=("Arial", 12, "bold"))
+    method_label.pack()
+
+    columns = ['k', 'a', 'b', 'lam', 'mu', 'f_lam', 'f_mu']
+    tree = ttk.Treeview(method_frame, columns=columns, show='headings', style="Custom.Treeview")
+    tree.pack(fill=BOTH, expand=True)
+
+    for col in columns:
+        tree.heading(col, text=col, anchor="center")
+        tree.column(col, anchor="center", width=100)
+
+    for step in solution_log:
+        tree.insert("", "end", values=(
+            step['k'], round(step['a'], 4), round(step['b'], 4), round(step['lam'], 4),
+            round(step['mu'], 4), round(step['f_lam'], 4), round(step['f_mu'], 4)
+        ))
+
+
+
+# Стилизация таблиц
+style = ttk.Style()
+style.configure("Custom.Treeview", rowheight=25)
+style.configure("Custom.Treeview.Heading", font=("Arial", 10, "bold"))
 
 # Запуск GUI
 
 root = Tk()
 root.title("lab1")
-root.geometry("800x600")
+root.geometry("900x600")
 
 # Создание фрейма для ввода данных и кнопок
 frame_input = Frame(root)
@@ -180,7 +213,7 @@ frame_table = Frame(root)
 frame_table.pack(side=TOP, fill=BOTH, expand=True)
 
 # Создание таблицы
-columns = ['Метод', 'k', 'a', 'b', 'lam', 'mu', 'f_lam', 'f_mu']
+columns = ['k', 'a', 'b', 'lam', 'mu', 'f_lam', 'f_mu']
 tree = ttk.Treeview(frame_table, columns=columns, show='headings')
 tree.pack(side=LEFT, fill=BOTH, expand=True)
 
@@ -254,3 +287,6 @@ def on_table_select(event):
 tree.bind("<<TreeviewSelect>>", on_table_select)
 
 root.mainloop()
+
+# Нынешний мой код выглядит так и в нем есть проблемы:
+# Отрисовывается одна лишняя таблица в начале независимо от того какая нажата кнопка: Решить все или Решить. Также при клике на строку из любого метода - обновление графика и отрисовка не происходит. При старте программы появляется пустое лишнее окно. и все также нет у таблицы границ выделяемых визуальной линией столбцы и строки.
