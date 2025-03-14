@@ -1,10 +1,8 @@
 from tkinter import *
 from tkinter import ttk
 import algorithms as alg
-from math import cos, sin, pi
 import matplotlib.pyplot as plt
 import numpy as np
-from matplotlib.backends.backend_tkagg import FigureCanvasTkAgg
 import ast
 
 # Список для хранения виджетов с результатами
@@ -142,15 +140,35 @@ def create_method_table(method_name, solution_log):
             round(step['mu'], 4), round(step['f_lam'], 4), round(step['f_mu'], 4)
         ))
 
-
+    # Привязка события выбора строки
+    tree.bind("<<TreeviewSelect>>", on_table_select)
 
 # Стилизация таблиц
 style = ttk.Style()
-style.configure("Custom.Treeview", rowheight=25)
-style.configure("Custom.Treeview.Heading", font=("Arial", 10, "bold"))
+style.configure("Custom.Treeview", 
+                rowheight=25, 
+                borderwidth=1, 
+                relief="solid",  # Добавляем границы
+                background="#ffffff",  # Цвет фона
+                fieldbackground="#ffffff")  # Цвет фона ячеек
+style.configure("Custom.Treeview.Heading", 
+                font=("Arial", 10, "bold"), 
+                borderwidth=1, 
+                relief="solid")  # Границы для заголовков
+style.theme_use("clam")
+
+# Настройка разделителей
+style.layout("Custom.Treeview", [
+    ('Custom.Treeview.treearea', {'sticky': 'nswe'})  # Растягиваем область таблицы
+])
+
+# Настройка границ для ячеек
+style.map("Custom.Treeview", 
+          background=[('selected', '#347083')],  # Цвет выделенной строки
+          foreground=[('selected', 'white')],  # Цвет текста выделенной строки
+          relief=[('selected', 'groove')])  # Стиль границы выделенной строки
 
 # Запуск GUI
-
 root = Tk()
 root.title("lab1")
 root.geometry("900x600")
@@ -208,24 +226,6 @@ solve_button.pack(pady=5)
 solve_all_button = Button(frame_input, text='Решить все', command=solve_all)
 solve_all_button.pack(pady=5)
 
-# Создание фрейма для таблицы
-frame_table = Frame(root)
-frame_table.pack(side=TOP, fill=BOTH, expand=True)
-
-# Создание таблицы
-columns = ['k', 'a', 'b', 'lam', 'mu', 'f_lam', 'f_mu']
-tree = ttk.Treeview(frame_table, columns=columns, show='headings')
-tree.pack(side=LEFT, fill=BOTH, expand=True)
-
-# Добавление заголовков
-for col in columns:
-    tree.heading(col, text=col)
-
-# Добавление прокрутки для таблицы
-scrollbar = Scrollbar(frame_table, orient="vertical", command=tree.yview)
-scrollbar.pack(side=RIGHT, fill=Y)
-tree.configure(yscroll=scrollbar.set)
-
 # Обновленная функция для отрисовки графика
 def plot_function(func, a, b, lam=None, mu=None):
     plt.clf()
@@ -238,9 +238,10 @@ def plot_function(func, a, b, lam=None, mu=None):
     # Добавляем точки A и B
     plt.scatter([a, b], [func(a), func(b)], color='blue', label='A и B', zorder=3)
 
-    # # Подсветка выбранного отрезка
-    # if lam is not None and mu is not None:
-    #     plt.plot([lam, mu], [func(lam), func(mu)], color='purple', linewidth=3, label='Выбранный отрезок')
+    # Отображаем точки lam и mu, если они есть
+    if lam is not None and mu is not None:
+        plt.plot([lam], [func(lam)], 'ro', label='lam', markersize=8)
+        plt.plot([mu], [func(mu)], 'go', label='mu', markersize=8)
 
     # Добавляет отображение осей
     ax = plt.gca()
@@ -255,38 +256,19 @@ def plot_function(func, a, b, lam=None, mu=None):
     plt.draw()
     plt.pause(0.001)
 
-    # Отображаем точки lam и mu, если они есть
-    if lam is not None and mu is not None:
-        plt.plot([lam], [func(lam)], 'ro', label='lam', markersize=8)
-        plt.plot([mu], [func(mu)], 'go', label='mu', markersize=8)
-
-    # Добавляем легенду
-    plt.legend()
-
-    # Обновляем график
-    plt.draw()
-    plt.pause(0.001)  # Позволяет обновить график
-
 # Функция для обработки выбора в таблице
 def on_table_select(event):
-    selected_item = tree.selection()[0]  # Получаем выбранный элемент
-    values = tree.item(selected_item, 'values')  # Получаем значения выбранного элемента
+    selected_item = event.widget.selection()[0]  # Получаем выбранный элемент
+    values = event.widget.item(selected_item, 'values')  # Получаем значения выбранного элемента
 
     # Извлекаем необходимые значения из таблицы
-    k = int(values[1])
-    a = float(values[2])
-    b = float(values[3])
-    lam = float(values[4])
-    mu = float(values[5])
+    a = float(values[1])
+    b = float(values[2])
+    lam = float(values[3])
+    mu = float(values[4])
 
     # Обновляем график с новыми значениями
     function_str = f"lambda x: {function_entry.get()}"
     plot_function(eval(function_str), a, b, lam, mu)
 
-# Обновляем график с новыми значениями
-tree.bind("<<TreeviewSelect>>", on_table_select)
-
 root.mainloop()
-
-# Нынешний мой код выглядит так и в нем есть проблемы:
-# Отрисовывается одна лишняя таблица в начале независимо от того какая нажата кнопка: Решить все или Решить. Также при клике на строку из любого метода - обновление графика и отрисовка не происходит. При старте программы появляется пустое лишнее окно. и все также нет у таблицы границ выделяемых визуальной линией столбцы и строки.
