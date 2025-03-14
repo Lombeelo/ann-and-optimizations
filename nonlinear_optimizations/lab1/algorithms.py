@@ -1,13 +1,26 @@
 
 max_steps = 100
 
+def calc_counter(solver_result):
+    counter = 0
+    for step in solver_result["solution_log"]:
+        if step["f_lam_calculated"] == True:
+            counter += 1
+        if step["f_mu_calculated"] == True:
+            counter += 1
+    return counter
+
+
 
 def dichotomy_solver(a, b, epsylon, l, func):  #a,b - границы интервала, epylon - шаг от центра, l - минимальный интервал, func - функция
     
     solver_result = { 
         "solution_log": [],
         "a_end": 0,
-        "b_end": 0
+        "b_end": 0,
+        "f_a_end": 0,
+        "f_b_end": 0,
+        "f_calculated_counter": 0
         }
     k = 1
     middle = 0
@@ -33,7 +46,7 @@ def dichotomy_solver(a, b, epsylon, l, func):  #a,b - границы интер�
             f_mu = func(mu)
    
             solver_result["solution_log"].append(
-                dict(k = k, a = a, b = b, lam = lam, mu = mu, f_lam = f_lam, f_lam_calculated = True,
+                dict(solver_type = "Дихотомический поиск", k = k, a = a, b = b, lam = lam, mu = mu, f_lam = f_lam, f_lam_calculated = True,
                       f_mu = f_mu, f_mu_calculated = True, epsylon = epsylon))
 
             if f_lam < f_mu:
@@ -42,15 +55,17 @@ def dichotomy_solver(a, b, epsylon, l, func):  #a,b - границы интер�
             else:
                 a = lam
                 b = b
-            k = k+1  #мб надо обновлять значение раньше?
+            k = k+1  
             if k > max_steps: 
-                print("end1")
                 current_step = "end"
             else:
-                print(f'step{k}') #было step11
                 current_step = "step1"
+
     solver_result["a_end"] = a
     solver_result["b_end"] = b
+    solver_result["f_opt"] = func((solver_result["a_end"]+solver_result["b_end"])/2)
+    solver_result["f_calculated_counter"] = calc_counter(solver_result)
+
     return solver_result
 
 
@@ -58,7 +73,10 @@ def golden_ratio_solver(a, b, epsylon, l, func):
     solver_result = { 
         "solution_log": [],
         "a_end": 0,
-        "b_end": 0
+        "b_end": 0,
+        "f_a_end": 0,
+        "f_b_end": 0,
+        "f_calculated_counter": 0
         }
     k = 1
     lam = 0
@@ -77,7 +95,7 @@ def golden_ratio_solver(a, b, epsylon, l, func):
     lam_calc = True
 
     solver_result["solution_log"].append(
-                dict(k = k, a = a, b = b, lam = lam, mu = mu,
+                dict(solver_type = "Золотое сечение", k = k, a = a, b = b, lam = lam, mu = mu,
                       f_lam = f_lam, f_lam_calculated = lam_calc,
                       f_mu = f_mu, f_mu_calculated = mu_calc, epsylon = epsylon))
     current_step = "step1"
@@ -116,7 +134,7 @@ def golden_ratio_solver(a, b, epsylon, l, func):
                 current_step = "end"
 
             solver_result["solution_log"].append(
-                dict(k = k, a = a, b = b, lam = lam, mu = mu,
+                dict(solver_type = "Золотое сечение", k = k, a = a, b = b, lam = lam, mu = mu,
                       f_lam = f_lam, f_lam_calculated = lam_calc,
                       f_mu = f_mu, f_mu_calculated = mu_calc, epsylon = epsylon))
             
@@ -124,6 +142,10 @@ def golden_ratio_solver(a, b, epsylon, l, func):
 
     solver_result["a_end"] = a
     solver_result["b_end"] = b
+    solver_result["f_opt"] = func((solver_result["a_end"]+solver_result["b_end"])/2)
+    solver_result["f_calculated_counter"] = calc_counter(solver_result)
+
+
     return solver_result
 
 
@@ -136,7 +158,10 @@ def fibonacchi_solver(a, b, epsylon, l, func):
     solver_result = { 
         "solution_log": [],
         "a_end": 0,
-        "b_end": 0
+        "b_end": 0,
+        "f_a_end": 0,
+        "f_b_end": 0,
+        "f_calculated_counter": 0
         }
     k = 1
     lam = a + F[n-k-1]/F[n-k+1]*(b - a)
@@ -148,7 +173,7 @@ def fibonacchi_solver(a, b, epsylon, l, func):
     lam_calc = True
 
     solver_result["solution_log"].append(
-        dict(k = k, a = a, b = b, lam = lam, mu = mu,
+        dict(solver_type = "Метод Фибоначчи", k = k, a = a, b = b, lam = lam, mu = mu,
                 f_lam = f_lam, f_lam_calculated = lam_calc,
                 f_mu = f_mu, f_mu_calculated = mu_calc, epsylon = epsylon))
 
@@ -192,7 +217,7 @@ def fibonacchi_solver(a, b, epsylon, l, func):
                 current_step = "end"
 
             solver_result["solution_log"].append(
-                dict(k = k, a = a, b = b, lam = lam, mu = mu,
+                dict(solver_type = "Метод Фибоначчи", k = k, a = a, b = b, lam = lam, mu = mu,
                         f_lam = f_lam, f_lam_calculated = lam_calc,
                         f_mu = f_mu, f_mu_calculated = mu_calc, epsylon = epsylon))
             
@@ -214,13 +239,17 @@ def fibonacchi_solver(a, b, epsylon, l, func):
                 b = b
             k = k+1
             solver_result["solution_log"].append(
-                dict(k = k, a = a, b = b, lam = lam, mu = mu,
+                dict(solver_type = "Метод Фибоначчи", k = k, a = a, b = b, lam = lam, mu = mu,
                         f_lam = f_lam, f_lam_calculated = lam_calc,
                         f_mu = f_mu, f_mu_calculated = mu_calc, epsylon = epsylon))
             current_step = "end"
     
     solver_result["a_end"] = a
     solver_result["b_end"] = b
+    solver_result["f_opt"] = func((solver_result["a_end"]+solver_result["b_end"])/2)
+    solver_result["f_calculated_counter"] = calc_counter(solver_result)
+
+
     return solver_result
 
 
