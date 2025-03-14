@@ -1,13 +1,14 @@
 import sys
 import csv
 from PyQt5.QtWidgets import (
-    QApplication, QMainWindow, QWidget, QVBoxLayout, QHBoxLayout, QLabel, QLineEdit, QComboBox, QPushButton, QTableWidget, QTableWidgetItem, QFileDialog
+    QApplication, QMainWindow, QWidget, QVBoxLayout, QHBoxLayout, QLabel, QLineEdit, QComboBox, QPushButton, QTableWidget, QTableWidgetItem, QFileDialog, QScrollArea, QHeaderView
 )
 from PyQt5.QtCore import Qt
 import algorithms as alg
 import matplotlib.pyplot as plt
-import numpy as np
 from matplotlib.backends.backend_qt5agg import FigureCanvasQTAgg as FigureCanvas
+from matplotlib.backends.backend_qt5agg import NavigationToolbar2QT as NavigationToolbar
+import numpy as np
 import ast
 
 
@@ -90,7 +91,17 @@ class MainWindow(QMainWindow):
         self.tables = []
         self.figure, self.ax = plt.subplots()
         self.canvas = FigureCanvas(self.figure)
+        self.toolbar = NavigationToolbar(self.canvas, self)  # Добавляем панель инструментов
+        self.right_layout.addWidget(self.toolbar)
         self.right_layout.addWidget(self.canvas)
+
+        # Прокрутка для таблиц
+        self.scroll_area = QScrollArea()
+        self.scroll_area.setWidgetResizable(True)
+        self.scroll_content = QWidget()
+        self.scroll_layout = QVBoxLayout(self.scroll_content)
+        self.scroll_area.setWidget(self.scroll_content)
+        self.right_layout.addWidget(self.scroll_area)
 
     def solve(self):
         """Решает задачу выбранным методом и обновляет таблицу и график."""
@@ -162,14 +173,25 @@ class MainWindow(QMainWindow):
         if self.min_max_combobox.currentText() == 'MAX':
             function_eval = eval(f"lambda x: -({self.function_entry.text()})")
 
+        results_text = ""
         for method_name, solver in solvers.items():
             if solver == alg.golden_ratio_solver:
                 solution = solver(a, b, '-', l, function_eval)
             else:
                 solution = solver(a, b, epsylon, l, function_eval)
 
+            # Вывод результатов
+            results_text += (
+                f'Кол-во расчетов ф-ции ({method_name}): {solution["f_calculated_counter"]}\n'
+                f'Оптимальный аргумент ({method_name}): {round((solution["a_end"] + solution["b_end"]) / 2, 4)}\n'
+                f'Оптимальное значение функции ({method_name}): {round(solution["f_opt"], 4) if self.min_max_combobox.currentText() == "MIN" else round(-solution["f_opt"], 4)}\n\n'
+            )
+
             # Создание таблицы
             self.create_method_table(method_name, solution["solution_log"])
+
+        # Вывод всех результатов
+        self.results_label.setText(results_text)
 
         # Отрисовка графика
         self.plot_function(eval(function_str), a, b)
@@ -181,11 +203,15 @@ class MainWindow(QMainWindow):
         table.setHorizontalHeaderLabels(['k', 'a', 'b', 'lam', 'mu', 'f_lam', 'f_mu'])
         table.setRowCount(len(solution_log))
 
+        # Убираем первый столбец с номерами строк
+        table.verticalHeader().setVisible(False)
+
         # Центрирование текста в ячейках
         for i in range(table.rowCount()):
             for j in range(table.columnCount()):
-                table.setItem(i, j, QTableWidgetItem())
-                table.item(i, j).setTextAlignment(Qt.AlignCenter)
+                item = QTableWidgetItem()
+                item.setTextAlignment(Qt.AlignCenter)
+                table.setItem(i, j, item)
 
         for i, step in enumerate(solution_log):
             table.setItem(i, 0, QTableWidgetItem(str(step['k'])))
@@ -196,12 +222,27 @@ class MainWindow(QMainWindow):
             table.setItem(i, 5, QTableWidgetItem(str(round(step['f_lam'], 4))))
             table.setItem(i, 6, QTableWidgetItem(str(round(step['f_mu'], 4))))
 
-        # Заголовок таблицы
+        # Жирный шрифт для заголовков столбцов
+        table.setStyleSheet("QHeaderView::section { font-weight: bold; }")
+
+        # Устанавливаем ширину столбцов
+        table.setColumnWidth(0, 80)  # Ширина столбца 'k'
+        table.setColumnWidth(1, 120)  # Ширина столбца 'a'
+        table.setColumnWidth(2, 120)  # Ширина столбца 'b'
+        table.setColumnWidth(3, 120)  # Ширина столбца 'lam'
+        table.setColumnWidth(4, 120)  # Ширина столбца 'mu'
+        table.setColumnWidth(5, 120)  # Ширина столбца 'f_lam'
+        table.setColumnWidth(6, 120)  # Ширина столбца 'f_mu'
+
+        # Включаем возможность изменения ширины столбцов
+        table.horizontalHeader().setSectionResizeMode(QHeaderView.Interactive)
+
+        # Заголовок таблицы (название метода)
         header = QLabel(method_name)
-        header.setStyleSheet("font-size: 14px; font-weight: bold;")
-        header.setAlignment(Qt.AlignCenter)
-        self.right_layout.addWidget(header)
-        self.right_layout.addWidget(table)
+        header.setStyleSheet("font-size: 16px; font-weight: bold;")
+        header.setAlignment(Qt.AlignLeft)  # Выравнивание влево
+        self.scroll_layout.addWidget(header)
+        self.scroll_layout.addWidget(table)
         self.tables.append((header, table))
 
         # Обработка кликов по таблице
