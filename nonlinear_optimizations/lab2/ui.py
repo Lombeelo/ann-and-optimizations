@@ -7,11 +7,13 @@ from matplotlib.backends.backend_qt5agg import NavigationToolbar2QT as Navigatio
 import numpy as np
 from algorithm_multidimensional import rosenbrock_discrete
 import math
+from matplotlib.patches import Rectangle  # Импортируем Rectangle для закрашивания области
 
 class OptimizationUI(QWidget):
     def __init__(self):
         super().__init__()
         self.initUI()
+        self.current_rectangle = None  # Текущий прямоугольник на графике
 
     def initUI(self):
         self.setWindowTitle('Optimization Algorithm UI')
@@ -65,7 +67,7 @@ class OptimizationUI(QWidget):
         self.table.setColumnCount(7)
         self.table.setHorizontalHeaderLabels(['K', 'Xk F(Xk)', 'j', 'yj F(yj)', 'Δj', 'dj', 'yj+Δdj F(yj+Δdj)'])
         self.table.verticalHeader().setVisible(False)  # Убираем нумерацию строк
-        self.table.cellClicked.connect(self.zoom_to_point)  # Обработчик клика по строке
+        self.table.cellClicked.connect(self.highlight_area)  # Обработчик клика по строке
 
         # Plot
         self.figure, self.ax = plt.subplots()
@@ -175,7 +177,8 @@ class OptimizationUI(QWidget):
         except Exception as e:
             print(f"Ошибка: {e}")
 
-    def zoom_to_point(self, row):
+    # ВНИМАНИЕ: ФУНКЦИОНАЛ НЕ РАБОЧИЙ, ПРИЧИНА ОШИБОК НЕИЗВЕСТНА. при клике на таблицу предполагалось что она будет подсвечиваться полупрозрачным прямоугольником
+    def highlight_area(self, row):
         # Получаем координаты точки из таблицы
         xk_item = self.table.item(row, 1)  # Столбец "Xk F(Xk)"
         
@@ -192,16 +195,31 @@ class OptimizationUI(QWidget):
             try:
                 # Извлекаем координаты из строки вида "[x, y] value"
                 xk_coords = xk_text.split()[0]  # Берем первую часть строки (координаты)
+                if not xk_coords.startswith('[') or not xk_coords.endswith(']'):
+                    raise ValueError("Некорректный формат координат")
                 xk_coords = xk_coords[1:-1]  # Убираем квадратные скобки
                 # Добавляем запятую между координатами, если её нет
                 if ',' not in xk_coords:
                     xk_coords = xk_coords.replace(' ', ',')
                 xk = [float(val) for val in xk_coords.split(',')]  # Преобразуем в числа
+                if len(xk) != 2:
+                    raise ValueError("Ожидалось два значения координат")
                 
-                # Приближаем график к точке
-                self.ax.set_xlim(xk[0] - 1, xk[0] + 1)
-                self.ax.set_ylim(xk[1] - 1, xk[1] + 1)
-                self.canvas.draw()
+                # Удаляем старый прямоугольник, если он есть
+                if self.current_rectangle:
+                    self.current_rectangle.remove()
+                    self.current_rectangle = None
+                
+                # Создаем новый прямоугольник для выделения области
+                rect_width = 2  # Ширина области (±1 по оси X)
+                rect_height = 2  # Высота области (±1 по оси Y)
+                self.current_rectangle = Rectangle(
+                    (xk[0] - rect_width / 2, xk[1] - rect_height / 2),  # Левый нижний угол
+                    rect_width, rect_height,  # Ширина и высота
+                    edgecolor='blue', facecolor='lightblue', alpha=0.5  # Цвет и прозрачность
+                )
+                self.ax.add_patch(self.current_rectangle)  # Добавляем прямоугольник на график
+                self.canvas.draw()  # Перерисовываем график
             except (ValueError, IndexError) as e:
                 print(f"Ошибка при обработке координат: {e}")
         else:
