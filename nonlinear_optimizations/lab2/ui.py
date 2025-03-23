@@ -179,7 +179,8 @@ class OptimizationUI(QWidget):
                 else:
                     # Точка yj_next (неудачные шаги)
                     self.ax.plot(entry['yj_next'][0], entry['yj_next'][1], 
-                                'x', color='gray', alpha=0.5, label='Неудачные шаги' if i == 0 else "")
+                                'x', color=colors[entry['k']], alpha=0.5, 
+                                label='Неудачные шаги' if i == 0 else "")
 
             # Создаем легенду для итераций
             from matplotlib.lines import Line2D
@@ -187,7 +188,7 @@ class OptimizationUI(QWidget):
                 Line2D([0], [0], marker='o', color='w', label='Основные точки итераций (xk)', 
                     markerfacecolor='red', markersize=10),  # Красные точки
                 Line2D([0], [0], marker='x', color='gray', label='Неудачные шаги', 
-                    markersize=10),  # Серые крестики для неудачных шагов
+                    markersize=10),  # Звездочки для неудачных шагов
             ]
             # Добавляем элементы для каждой итерации
             for i in range(num_iterations):
