@@ -128,7 +128,7 @@ class OptimizationUI(QWidget):
                         self.table.setSpan(start_row, 0, i - start_row, 1)
                         self.table.setSpan(start_row, 1, i - start_row, 1)
                     start_row = i
-                    self.table.setItem(i, 0, QTableWidgetItem(str(k)))
+                    self.table.setItem(i, 0, QTableWidgetItem(str(k + 1)))  # Нумерация итераций с 1
                     self.table.setItem(i, 1, QTableWidgetItem(xk))
                     prev_k = k
                     prev_xk = xk
@@ -156,16 +156,54 @@ class OptimizationUI(QWidget):
             X, Y = np.meshgrid(x, y)
             Z = np.vectorize(lambda x, y: func([x, y]))(X, Y)
             self.ax.contour(X, Y, Z, levels=50)
+
+            # Добавляем основные точки итераций (xk)
             points_x = [entry['xk'][0] for entry in log]
             points_y = [entry['xk'][1] for entry in log]
-            self.ax.plot(points_x, points_y, 'ro-', label='Точки итераций')
-            self.ax.legend()
+            self.ax.plot(points_x, points_y, 'ro-', label='Основные точки итераций (xk)')
+
+            # Цвета для итераций
+            num_iterations = max(entry['k'] for entry in log) + 1
+            colors = plt.cm.viridis(np.linspace(0, 1, num_iterations))
+
+            # Добавляем точки между итерациями (yj_next) с учетом success
+            for i, entry in enumerate(log):
+                if entry['success']:
+                    # Линия между yj и yj_next (удачные шаги)
+                    self.ax.plot([entry['yj'][0], entry['yj_next'][0]], 
+                                [entry['yj'][1], entry['yj_next'][1]], 
+                                '--', color=colors[entry['k']], alpha=0.5)
+                    # Точка yj_next (удачные шаги)
+                    self.ax.plot(entry['yj_next'][0], entry['yj_next'][1], 
+                                'o', color=colors[entry['k']], alpha=0.5)
+                else:
+                    # Точка yj_next (неудачные шаги)
+                    self.ax.plot(entry['yj_next'][0], entry['yj_next'][1], 
+                                'x', color='gray', alpha=0.5, label='Неудачные шаги' if i == 0 else "")
+
+            # Создаем легенду для итераций
+            from matplotlib.lines import Line2D
+            legend_elements = [
+                Line2D([0], [0], marker='o', color='w', label='Основные точки итераций (xk)', 
+                    markerfacecolor='red', markersize=10),  # Красные точки
+                Line2D([0], [0], marker='x', color='gray', label='Неудачные шаги', 
+                    markersize=10),  # Серые крестики для неудачных шагов
+            ]
+            # Добавляем элементы для каждой итерации
+            for i in range(num_iterations):
+                legend_elements.append(
+                    Line2D([0], [0], marker='o', color='w', label=f'Итерация {i+1}', 
+                        markerfacecolor=colors[i], markersize=10)
+                )
+
+            self.ax.legend(handles=legend_elements, title="Легенда")
+
             self.canvas.draw()
 
             # Вывод результатов
             optimal_point = log[-1]['xk']
             optimal_value = log[-1]['fxk']
-            num_iterations = len(log)
+            num_iterations = max(entry['k'] for entry in log) + 1  # Количество уникальных k
 
             results_text = (
                 f"Оптимальное значение аргумента: {np.round(optimal_point, 4)}\n"
@@ -177,7 +215,6 @@ class OptimizationUI(QWidget):
         except Exception as e:
             print(f"Ошибка: {e}")
 
-    # ВНИМАНИЕ: ФУНКЦИОНАЛ НЕ РАБОЧИЙ, ПРИЧИНА ОШИБОК НЕИЗВЕСТНА. при клике на таблицу предполагалось что она будет подсвечиваться полупрозрачным прямоугольником
     def highlight_area(self, row):
         # Получаем координаты точки из таблицы
         xk_item = self.table.item(row, 1)  # Столбец "Xk F(Xk)"
