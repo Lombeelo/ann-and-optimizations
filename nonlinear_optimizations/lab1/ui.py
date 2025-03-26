@@ -103,6 +103,19 @@ class MainWindow(QMainWindow):
         self.scroll_area.setWidget(self.scroll_content)
         self.right_layout.addWidget(self.scroll_area)
 
+        # Значения по нашему заданию из лабораторной работы
+        self.set_default_values()
+    
+    def set_default_values(self):
+        """Устанавливает значения по умолчанию"""
+        self.function_entry.setText("3/x**3")
+        self.left_entry.setText("-3")
+        self.right_entry.setText("0")
+        self.epsilon_entry.setText("0.001")
+        self.l_entry.setText("0.1")
+        self.algorithm_combobox.setCurrentText("Дихотомический поиск")
+        self.min_max_combobox.setCurrentText("MIN")
+
     def solve(self):
         """Решает задачу выбранным методом и обновляет таблицу и график."""
         self.clear_tables()
