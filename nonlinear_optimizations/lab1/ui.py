@@ -275,24 +275,63 @@ class MainWindow(QMainWindow):
             self.plot_function(eval(function_str), a, b, lam, mu)
 
     def plot_function(self, func, a, b, lam=None, mu=None):
-        """Отрисовывает график функции."""
+        """Отрисовывает график функции с обработкой ошибок вычисления."""
         self.ax.clear()
+        
+        # Генерация точек для графика
         x = np.linspace(a, b, 100)
-        y = func(x)
-
-        self.ax.plot(x, y, label='Функция')
-        self.ax.scatter([a, b], [func(a), func(b)], color='blue', label='A и B', zorder=3)
-
-        if lam is not None and mu is not None:
-            self.ax.plot([lam], [func(lam)], 'ro', label='lam', markersize=8)
-            self.ax.plot([mu], [func(mu)], 'go', label='mu', markersize=8)
-
+        y = np.zeros_like(x)
+        
+        # Вычисление значений функции с обработкой ошибок
+        valid_points = []
+        for i, xi in enumerate(x):
+            try:
+                y[i] = func(xi)
+                valid_points.append(i)
+            except (ZeroDivisionError, ValueError, ArithmeticError):
+                y[i] = np.nan  # Помечаем проблемные точки как NaN
+        
+        # Отрисовка основной линии (только валидные точки)
+        if valid_points:
+            valid_x = x[valid_points]
+            valid_y = y[valid_points]
+            self.ax.plot(valid_x, valid_y, label='Функция')
+        
+        # Отрисовка граничных точек с обработкой ошибок
+        endpoints = []
+        endpoint_labels = []
+        for xi, label in [(a, 'A'), (b, 'B')]:
+            try:
+                yi = func(xi)
+                endpoints.append((xi, yi))
+                endpoint_labels.append(label)
+            except (ZeroDivisionError, ValueError, ArithmeticError):
+                pass
+        
+        if endpoints:
+            x_points, y_points = zip(*endpoints)
+            self.ax.scatter(x_points, y_points, color='blue', label=f"{' и '.join(endpoint_labels)}", zorder=3)
+        
+        # Отрисовка точек lam и mu с обработкой ошибок
+        for point, color, marker_label in [(lam, 'red', 'lam'), (mu, 'green', 'mu')]:
+            if point is not None:
+                try:
+                    y_point = func(point)
+                    self.ax.plot([point], [y_point], f'{color}o', label=marker_label, markersize=8)
+                except (ZeroDivisionError, ValueError, ArithmeticError):
+                    pass
+        
+        # Оформление графика
         self.ax.axhline(y=0, color='k')
         self.ax.axvline(x=0, color='k')
         self.ax.set_xlabel('x')
         self.ax.set_ylabel('f(x)')
         self.ax.set_title('График функции')
-        self.ax.legend()
+        
+        # Добавляем легенду только если есть что отображать
+        if self.ax.lines or self.ax.collections:
+            self.ax.legend()
+        
         self.ax.grid()
         self.canvas.draw()
 
