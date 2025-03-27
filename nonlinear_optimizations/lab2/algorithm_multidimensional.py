@@ -60,39 +60,40 @@ def gram_shmidt(d_old, lambdas):
     return e
 
     # Процедура Грамма-Шмидта для построения направлений (только два измерения)
-def GramSchmidt(lyamPrev1, lyamPrev2, dj):
-    bj = [[0,0],[0,0]] 
-    aj = [0,0] 
-    lyam = [lyamPrev1, lyamPrev2]
+def GramSchmidt(lyamPrev, dj):
+    dim = len(dj)
+    bj = [[0]*dim for _ in range(dim)] 
+    aj = [0]*dim 
+    lyam = list(lyamPrev)
 
-    dj_copy = dj
+    dj_copy = list(dj)
 
-    for j in range (2):
-        for s in range(2):
+    for j in range (dim):
+        for s in range(dim):
             if lyam[s] == 0:
                 aj[j] = dj[j][s] 
             else:
                 aj[j] = aj[j]+ lyam[j]*dj[j][s] 
-    sum = [0,0] 
-    l_dj = [0,0] 
-    l_bj= [0,0] 
+    sum = [0]*dim 
+    l_dj = [0]*dim  
+    l_bj= [0]*dim 
 
-    for j in range(2):
+    for j in range(dim):
         l_dj[j] = math.sqrt(math.pow(dj[j][0], 2) + math.pow(dj[j][1], 2)); 
-        for s in range(2):
+        for s in range(dim):
             sum[j] = sum[j] + (aj[s] * dj[j][s]) * dj[j][s]; 
-    for j in range(2):
-        for s in range(2):
+    for j in range(dim):
+        for s in range(dim):
             if (j == 0): 
                 bj[j][s] = aj[s]
             else: 
                 bj[j][s] = aj[s] - (sum[j - 1] + sum[j]); 
         
-    for j in range(2):
+    for j in range(dim):
         l_bj[j] = math.sqrt(math.pow(bj[j][0], 2) + math.pow(bj[j][1], 2)); 
 
-    for j in range(2):
-        for s in range(2):
+    for j in range(dim):
+        for s in range(dim):
             dj_copy[j][s] = bj[j][s] / l_bj[j]; 
             aj[j] = 0; 
             bj[j][s] = 0; 
@@ -120,7 +121,7 @@ def rosenbrock_discrete(func,
     # Не смог понять алгоритм пересчёта направлений...
     # так что тактично спиздил :)
     # А он только на 2-мерные функции расчитан
-    if dim != 2: raise NotImplementedError()
+    #if dim != 2: raise NotImplementedError()
 
     # массив направлений шага
     d = []
@@ -130,13 +131,13 @@ def rosenbrock_discrete(func,
         d.append(di)
     
     # берём начальные приближения
-    delta = delta_starting
+    delta = list(delta_starting)
     # начальная точка равна 0
-    x = x_starting
+    x = list(x_starting)
     # промежуточная точка внутри итерации
-    y = x
+    y = list(x)
     # предыдущая точки среди промежуточных
-    y_prev = y
+    y_prev = list(y)
     k = j = 0
     step = "step1"
     while step != "end":
@@ -145,25 +146,25 @@ def rosenbrock_discrete(func,
             new_value_try = func(new_value_arg)
             if(new_value_try < func(y)):
                 calculation_log.append(dict(
-                    k=k, xk=x, fxk=func(x),
-                    j=j, yj=y, fyj=func(y),
-                    deltaj=delta[j], dj=d[j],
-                    yj_next=new_value_arg,
+                    k=k, xk=list(x), fxk=func(x),
+                    j=j, yj=list(y), fyj=func(y),
+                    deltaj=delta[j], dj=list(d[j]),
+                    yj_next=list(new_value_arg),
                     fyj_next=new_value_try,
                     success = True))
                 #success
-                y = new_value_arg
+                y = list(new_value_arg)
                 delta[j] *= alpha
             else:
                 calculation_log.append(dict(
-                    k=k, xk=x, fxk=func(x),
-                    j=j, yj=y, fyj=func(y),
-                    deltaj=delta[j], dj=d[j],
-                    yj_next=new_value_arg,
+                    k=k, xk=list(x), fxk=func(x),
+                    j=j, yj=list(y), fyj=func(y),
+                    deltaj=delta[j], dj=list(d[j]),
+                    yj_next=list(new_value_arg),
                     fyj_next=new_value_try,
-                    success = False))
+                    success = True))
                 #failure
-                y = y
+                y = list(y)
                 delta[j] *= beta
 
             if j < dim-1:
@@ -173,7 +174,7 @@ def rosenbrock_discrete(func,
                 step = "step2"
         elif step == "step2":
             if func(y) < func(y_prev):
-                y_prev = y
+                y_prev = list(y)
                 j = 0
                 step = "step1"
             elif (func(y) < func(x)): # func(y) == func(y_prev)
@@ -181,7 +182,7 @@ def rosenbrock_discrete(func,
             else: # func(y) == func(x)
                 for i in range(dim):
                     if abs(delta[j]) >= epsylon:
-                        y_prev = y
+                        y_prev = list(y)
                         j = 0
                         step = "step1"
                         break
@@ -189,7 +190,7 @@ def rosenbrock_discrete(func,
                         step = "end"
         elif step == "step3":
             if distance(x, y) < epsylon:
-               x = y
+               x = list(y)
                step = "end"
                continue
             
@@ -200,10 +201,10 @@ def rosenbrock_discrete(func,
                 scalar_prod = scalar_mult(overall_step, d[j])
                 lambdas.append(math.copysign(norm(projection), scalar_prod))
             
-            d = GramSchmidt(lambdas[0], lambdas[1], d)
-            y_prev = y
-            x = y
-            delta = delta_starting
+            d = GramSchmidt(lambdas, d)
+            y_prev = list(y)
+            x = list(y)
+            delta = list(delta_starting)
             k = k + 1
             j = 0
             step = "step1"
@@ -213,7 +214,7 @@ def rosenbrock_discrete(func,
 #test
 if __name__ == "__main__":
     log = rosenbrock_discrete(
-        lambda x: (x[0] - 2)**4 + (x[0]-2*x[1])**2,
-        [0, 3], 0.1, 2, -0.5, [0.1, 0.1])
+        lambda x: x[0]**4 + 2*x[0]**3+(x[1]-4)**2+2*x[2]**2+8*x[2],
+        [1, 0, 1], 0.1, 2, -0.5, [0.1, 0.1, 0.1])
     for entry in log:
         print(entry)

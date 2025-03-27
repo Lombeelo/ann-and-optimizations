@@ -32,6 +32,7 @@ class OptimizationUI(QWidget):
         self.alpha_input = QLineEdit(self)
         self.beta_input = QLineEdit(self)
         self.delta_input = QLineEdit(self)
+        self.dim_input = QLineEdit(self)
 
         # Заполним поля тестовыми данными для удобства тестирования
         self.function_input.setText("(x[0] - 2)**4 + (x[0] - 2*x[1])**2")
