@@ -38,32 +38,41 @@ def norm(vec: list) -> float:
 def gram_shmidt(d_old, lambdas):
     dim = len(d_old)
     q = [vec_mult_scalar(lambdas[j], d_old[j]) if lambdas[j] != 0 else d_old[j] for j in range(dim)]
-    print(q)
-    p = []
-    for i in range(dim):
-        p.append([0] * dim)
-        for j in range(i,dim):
-            p[i] = vector_add(p[i], q[j])
-    print(p)
-    b = []
-    for i in range(dim):
-        b.append([0] * dim)
-        b[i] = p[i]
-        if i == 0: continue
+    pattern_vector = [0] * dim
+    for vec in q:
+        pattern_vector = vector_add(pattern_vector, vec)
+    norm_p = norm(pattern_vector)
+    new_basis = []
+    # Новая первая ось
+    new_basis.append(vec_mult_scalar(1/norm_p, pattern_vector))
 
-        for j in range(1, i+1):
-            b[i] = vector_add(b[i], neg(proj(p[i], b[j-1])))
-    print(b)
+    # Остальные оси определяются из старого базиса,
+    # проецируя их ортогонально к новому первому вектору
+    for i in range(1, dim):
+        vi = q[i]
+        # Проекция на уже сформированные базисные векторы
+        for j in range(i):
+            prj = proj(vi, new_basis[j])
+            vi = vector_add(vi, neg(prj))
+        norm_vi = norm(vi)
+        if norm_vi < 1e-12:
+            # Если вектор вырожден, выбираем произвольное ортогональное направление
+            # Например, можно взять i-ый канонический вектор, ортогонализованный относительно
+            vi = [0] * dim
+            vi[i] = 1.0
+            for j in range(i):
+                prj = proj(vi, new_basis[j])
+                vi = vector_add(vi, neg(prj))
+            norm_vi = norm(vi)
+        new_basis.append(vec_mult_scalar(1/norm_vi, vi))
+    return new_basis
 
-    e = [vec_mult_scalar(1/norm(i), i) for i in b]
-
-    return e
 
     # Процедура Грамма-Шмидта для построения направлений (только два измерения)
 def GramSchmidt(lyamPrev, dj):
     dim = len(dj)
-    bj = [[0]*dim for _ in range(dim)] 
-    aj = [0]*dim 
+    bj = [[0]*dim for _ in range(dim)]
+    aj = [0]*dim
     lyam = list(lyamPrev)
 
     dj_copy = list(dj)
@@ -71,33 +80,33 @@ def GramSchmidt(lyamPrev, dj):
     for j in range (dim):
         for s in range(dim):
             if lyam[s] == 0:
-                aj[j] = dj[j][s] 
+                aj[j] = dj[j][s]
             else:
-                aj[j] = aj[j]+ lyam[j]*dj[j][s] 
-    sum = [0]*dim 
-    l_dj = [0]*dim  
-    l_bj= [0]*dim 
+                aj[j] = aj[j]+ lyam[j]*dj[j][s]
+    sum = [0]*dim
+    l_dj = [0]*dim
+    l_bj= [0]*dim
 
     for j in range(dim):
-        l_dj[j] = math.sqrt(math.pow(dj[j][0], 2) + math.pow(dj[j][1], 2)); 
+        l_dj[j] = math.sqrt(math.pow(dj[j][0], 2) + math.pow(dj[j][1], 2));
         for s in range(dim):
-            sum[j] = sum[j] + (aj[s] * dj[j][s]) * dj[j][s]; 
+            sum[j] = sum[j] + (aj[s] * dj[j][s]) * dj[j][s];
     for j in range(dim):
         for s in range(dim):
-            if (j == 0): 
+            if (j == 0):
                 bj[j][s] = aj[s]
-            else: 
-                bj[j][s] = aj[s] - (sum[j - 1] + sum[j]); 
-        
+            else:
+                bj[j][s] = aj[s] - (sum[j - 1] + sum[j]);
+
     for j in range(dim):
-        l_bj[j] = math.sqrt(math.pow(bj[j][0], 2) + math.pow(bj[j][1], 2)); 
+        l_bj[j] = math.sqrt(math.pow(bj[j][0], 2) + math.pow(bj[j][1], 2));
 
     for j in range(dim):
         for s in range(dim):
-            dj_copy[j][s] = bj[j][s] / l_bj[j]; 
-            aj[j] = 0; 
-            bj[j][s] = 0; 
-    return dj_copy 
+            dj_copy[j][s] = bj[j][s] / l_bj[j];
+            aj[j] = 0;
+            bj[j][s] = 0;
+    return dj_copy
 
 
 
@@ -108,11 +117,11 @@ def GramSchmidt(lyamPrev, dj):
 # alpha - коэффициент растяжения float
 # beta - коэффициент сжатия float
 # delta_starting - начальные значения длин шагов list[dim]
-def rosenbrock_discrete(func, 
-                        x_starting: list, 
-                        epsylon: float, 
-                        alpha: float, 
-                        beta: float, 
+def rosenbrock_discrete(func,
+                        x_starting: list,
+                        epsylon: float,
+                        alpha: float,
+                        beta: float,
                         delta_starting: list) -> list:
     calculation_log = []
     # размерность функции (размер массива аргументов)
@@ -129,7 +138,7 @@ def rosenbrock_discrete(func,
         di = [0] * dim
         di[i] = 1
         d.append(di)
-    
+
     # берём начальные приближения
     delta = list(delta_starting)
     # начальная точка равна 0
@@ -162,7 +171,7 @@ def rosenbrock_discrete(func,
                     deltaj=delta[j], dj=list(d[j]),
                     yj_next=list(new_value_arg),
                     fyj_next=new_value_try,
-                    success = True))
+                    success = False))
                 #failure
                 y = list(y)
                 delta[j] *= beta
@@ -186,22 +195,22 @@ def rosenbrock_discrete(func,
                         j = 0
                         step = "step1"
                         break
-                    else: # криво, но пофиг    
+                    else: # криво, но пофиг
                         step = "end"
         elif step == "step3":
             if distance(x, y) < epsylon:
                x = list(y)
                step = "end"
                continue
-            
+
             overall_step = vector_add(y, neg(x))
             lambdas = []
             for j in range(dim):
                 projection = proj(overall_step, d[j])
                 scalar_prod = scalar_mult(overall_step, d[j])
                 lambdas.append(math.copysign(norm(projection), scalar_prod))
-            
-            d = GramSchmidt(lambdas, d)
+
+            d = gram_shmidt(d, lambdas)
             y_prev = list(y)
             x = list(y)
             delta = list(delta_starting)
@@ -209,7 +218,7 @@ def rosenbrock_discrete(func,
             j = 0
             step = "step1"
     return calculation_log
-        
+
 
 #test
 if __name__ == "__main__":
