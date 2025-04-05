@@ -35,8 +35,10 @@ class OptimizationUI(QWidget):
         self.dim_input = QLineEdit(self)
 
         # Заполним поля тестовыми данными для удобства тестирования
-        self.function_input.setText("(x[0] - 2)**4 + (x[0] - 2*x[1])**2")
-        self.start_point_input.setText("[0, 3]")
+        #self.function_input.setText("(x[0] - 2)**4 + (x[0] - 2*x[1])**2")
+        self.function_input.setText("x[0]**4+2*x[0]**3+(x[1]-4)**2+2*x[2]**2+8*x[2]") # -6*X[0]-4[1]+x[0]**2+x[1]**2+18
+        #self.start_point_input.setText("[0, 3]")
+        self.start_point_input.setText("[1, 0, 1]") # [0, 0, 0] # [1, 1]
         self.epsilon_input.setText("0.1")
         self.alpha_input.setText("2")
         self.beta_input.setText("-0.5")
