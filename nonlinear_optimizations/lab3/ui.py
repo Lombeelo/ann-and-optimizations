@@ -22,6 +22,8 @@ class PenaltyMethodUI(QWidget):
         self.contour = None
         self.constraint_line = None
         self.constraint_area = None
+        self.all_points = []  # Для хранения всех точек с правильной нумерацией
+        self.cbar = None  # Для хранения цветовой шкалы
 
     def initUI(self):
         self.setWindowTitle('Метод штрафных функций')
@@ -135,6 +137,12 @@ class PenaltyMethodUI(QWidget):
 
     def run_optimization(self):
         try:
+            # Очищаем предыдущие результаты
+            self.table.setRowCount(0)
+            self.results_text.clear()
+            self.points_history = []
+            self.all_points = []
+            
             # Получение входных данных
             func_str = self.function_input.text()
             constraint_str = self.constraint_input.text()
@@ -146,7 +154,8 @@ class PenaltyMethodUI(QWidget):
                 constraint = eval(constraint_str.split('<=')[0], {'x': x, 'math': math})
                 return f + mu * max(constraint, 0)
             
-            self.points_history = []
+            # Добавляем начальную точку
+            self.all_points.append(('X₁', start_point))
             table_data = []
             
             if self.strategy_a.isChecked():
@@ -157,6 +166,7 @@ class PenaltyMethodUI(QWidget):
                     lambda x: penalty_function(x, 100), epsylon, x1, [-10, 10])
                 
                 self.points_history.extend([('μ=0.1', start_point, x1), ('μ=100', x1, x2)])
+                self.all_points.extend([('X₂', x1), ('X₃', x2)])
                 
                 table_data.extend([
                     self.create_table_row(1, 0.1, x1, func_str, constraint_str, penalty_function, 'X₁ → X₂'),
@@ -168,6 +178,7 @@ class PenaltyMethodUI(QWidget):
                 x_opt = cyclic_coordinate_descend_nolog(
                     lambda x: penalty_function(x, 100), epsylon, [1, -5], [-10, 10])
                 self.points_history.append(('μ=100', [1, -5], x_opt))
+                self.all_points.extend([('X₁', [1, -5]), ('X₂', x_opt)])
                 
                 table_data.append(
                     self.create_table_row(1, 100, x_opt, func_str, constraint_str, penalty_function, '(1,-5) → X₁')
@@ -182,6 +193,7 @@ class PenaltyMethodUI(QWidget):
                     x_next = cyclic_coordinate_descend_nolog(
                         lambda x: penalty_function(x, mu), epsylon, x_current, [-10, 10])
                     self.points_history.append((f'μ={mu}', x_current, x_next))
+                    self.all_points.append((f'X{i+2}', x_next))
                     
                     table_data.append(
                         self.create_table_row(
@@ -194,6 +206,7 @@ class PenaltyMethodUI(QWidget):
                 x_opt = cyclic_coordinate_descend_nolog(
                     lambda x: penalty_function(x, 100), epsylon, start_point, [-10, 10])
                 self.points_history.append(('μ=100', start_point, x_opt))
+                self.all_points.append(('X₂', x_opt))
                 
                 table_data.append(
                     self.create_table_row(1, 100, x_opt, func_str, constraint_str, penalty_function, 'X₁ → X₂')
@@ -206,7 +219,7 @@ class PenaltyMethodUI(QWidget):
             final_value = eval(func_str, {'x': final_point, 'math': math})
             constraint_violation = max(eval(constraint_str.split('<=')[0], {'x': final_point, 'math': math}), 0)
             
-            self.results_text.setText(
+            self.results_text.setPlainText(
                 f"Финальная точка: {np.round(final_point, 4)}\n"
                 f"Значение функции: {np.round(final_value, 4)}\n"
                 f"Нарушение ограничения: {np.round(constraint_violation, 6)}\n"
@@ -214,10 +227,10 @@ class PenaltyMethodUI(QWidget):
             )
             
         except Exception as e:
-            self.results_text.setText(f"Ошибка: {str(e)}")
+            self.results_text.setPlainText(f"Ошибка: {str(e)}")
 
     def create_table_row(self, k, mu, x, func_str, constraint_str, penalty_func, steps):
-        x_rounded = [round(val, 6) for val in x]  # Округление координат
+        x_rounded = [round(val, 6) for val in x]
         f_val = round(eval(func_str, {'x': x, 'math': math}), 6)
         alpha = round(max(eval(constraint_str.split('<=')[0], {'x': x, 'math': math}), 0), 6)
         theta = round(penalty_func(x, mu), 6)
@@ -253,34 +266,27 @@ class PenaltyMethodUI(QWidget):
                     item.setTextAlignment(Qt.AlignCenter)
 
     def plot_results(self):
-        # Полная очистка осей
-        self.ax.clear()
+        # Полностью очищаем фигуру
+        self.figure.clear()
+        
+        # Создаем новые оси с фиксированным расположением
+        self.ax = self.figure.add_axes([0.1, 0.1, 0.7, 0.8])  # [left, bottom, width, height]
         
         # Сброс графических объектов
         self.contour = None
         self.constraint_line = None
         self.constraint_area = None
         self.current_rectangle = None
-        if self.annotation:
-            self.annotation.remove()
-            self.annotation = None
+        self.annotation = None
+        self.cbar = None
         
         # Получение данных для построения
         func_str = self.function_input.text()
         constraint_str = self.constraint_input.text()
         
-        # Сбор всех точек
-        all_points = []
-        for _, start, end in self.points_history:
-            all_points.append(start)
-            all_points.append(end)
-        
-        if not all_points:
-            all_points = [[0, -4], [1, -5]]
-        
         # Вычисление границ
-        x_coords = [p[0] for p in all_points]
-        y_coords = [p[1] for p in all_points]
+        x_coords = [p[1][0] for p in self.all_points]
+        y_coords = [p[1][1] for p in self.all_points]
         
         x_padding = max(1, (max(x_coords) - min(x_coords)) * 0.3)
         y_padding = max(1, (max(y_coords) - min(y_coords)) * 0.3)
@@ -288,7 +294,7 @@ class PenaltyMethodUI(QWidget):
         x_min, x_max = min(x_coords)-x_padding, max(x_coords)+x_padding
         y_min, y_max = min(y_coords)-y_padding, max(y_coords)+y_padding
         
-        # Создание сетки с повышенной точностью
+        # Создание сетки
         x = np.linspace(x_min, x_max, 200)
         y = np.linspace(y_min, y_max, 200)
         X, Y = np.meshgrid(x, y)
@@ -298,37 +304,33 @@ class PenaltyMethodUI(QWidget):
             Z_func = np.vectorize(lambda x, y: eval(func_str, {'x': [x, y], 'math': math}))(X, Y)
             Z_constraint = np.vectorize(lambda x, y: eval(constraint_str.split('<=')[0], {'x': [x, y], 'math': math}))(X, Y)
         except Exception as e:
-            self.results_text.setText(f"Ошибка вычисления: {str(e)}")
+            self.results_text.setPlainText(f"Ошибка вычисления: {str(e)}")
             return
         
         # Построение контуров функции
         self.contour = self.ax.contour(X, Y, Z_func, levels=20, cmap='viridis')
-        self.figure.colorbar(self.contour, ax=self.ax, label='Значение функции')
+        self.cbar = self.figure.colorbar(self.contour, ax=self.ax, label='Значение функции')
         
         # Построение ограничений
         self.constraint_line = self.ax.contour(X, Y, Z_constraint, levels=[0], colors='red', linewidths=2)
         self.constraint_area = self.ax.fill_between(x, x**2, y_max, color='red', alpha=0.1, label='Недопустимая область')
         
-        # Построение путей оптимизации с точными метками
+        # Построение путей оптимизации
         colors = plt.cm.plasma(np.linspace(0, 1, len(self.points_history)))
         legend_handles = []
         legend_labels = []
         
-        for i, (label, start, end) in enumerate(self.points_history):
-            # Линия пути
-            line = self.ax.plot([start[0], end[0]], [start[1], end[1]], 
-                            'o-', color=colors[i], markersize=6, linewidth=2)[0]
-            
-            # Метка начальной точки для первого шага
-            if i == 0:
-                self.ax.text(start[0], start[1], 'X₁', ha='center', va='center',
-                            bbox=dict(facecolor='white', alpha=0.8, edgecolor='none', pad=2))
-            
-            # Метка конечной точки
-            self.ax.text(end[0], end[1], f'X{i+2}', ha='center', va='center',
+        # Отображение всех точек с правильными подписями
+        for label, point in self.all_points:
+            self.ax.plot(point[0], point[1], 'o', color='black', markersize=6)
+            self.ax.text(point[0], point[1], label, ha='center', va='center',
                         bbox=dict(facecolor='white', alpha=0.8, edgecolor='none', pad=2))
+        
+        # Рисуем линии между точками
+        for i, (label, start, end) in enumerate(self.points_history):
+            line = self.ax.plot([start[0], end[0]], [start[1], end[1]], 
+                            '-', color=colors[i], linewidth=2)[0]
             
-            # Добавление в легенду
             if label not in legend_labels:
                 legend_handles.append(line)
                 legend_labels.append(label)
@@ -350,16 +352,13 @@ class PenaltyMethodUI(QWidget):
         self.ax.grid(True, linestyle='--', alpha=0.5)
         
         # Обновление графика
-        self.figure.tight_layout()
         self.canvas.draw()
-        self.canvas.flush_events()
 
     def highlight_point(self, row):
-        if row >= len(self.points_history):
+        if row >= len(self.all_points):
             return
             
-        point_str = self.table.item(row, 2).text()
-        point = [float(x) for x in point_str[1:-1].split(',')]
+        point_label, point_coords = self.all_points[row]
         
         if self.current_rectangle:
             self.current_rectangle.remove()
@@ -367,13 +366,13 @@ class PenaltyMethodUI(QWidget):
             self.annotation.remove()
         
         self.current_rectangle = Rectangle(
-            (point[0]-0.2, point[1]-0.2), 0.4, 0.4,
+            (point_coords[0]-0.2, point_coords[1]-0.2), 0.4, 0.4,
             edgecolor='blue', facecolor='none', linewidth=2
         )
         self.ax.add_patch(self.current_rectangle)
         
         self.annotation = self.ax.annotate(
-            f"X{row+1}", xy=(point[0], point[1]), xytext=(10, 10),
+            point_label, xy=(point_coords[0], point_coords[1]), xytext=(10, 10),
             textcoords='offset points', 
             bbox=dict(boxstyle='round,pad=0.5', fc='yellow', alpha=0.5),
             arrowprops=dict(arrowstyle='->'))
